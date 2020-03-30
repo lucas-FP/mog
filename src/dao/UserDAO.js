@@ -1,25 +1,25 @@
 const connection = require('../database/connection');
 
 module.exports = {
-  async index() {
+  index() {
     return connection('users').select('*');
   },
 
-  async find(id) {
+  find(id) {
     return connection('users')
       .where('id', id)
       .select('*')
       .first();
   },
 
-  async findByName(userName) {
+  findByName(userName) {
     return connection('users')
       .where('userName', userName)
       .select('*')
       .first();
   },
 
-  async create(id, nick, isGuest, userName, password) {
+  create(id, nick, isGuest, userName, password) {
     return connection('users').insert({
       id,
       nick,
@@ -27,5 +27,35 @@ module.exports = {
       userName,
       password
     });
+  },
+
+  paginateUserRooms(userId, pageSize, page) {
+    return Promise.all([
+      connection('rooms')
+        .leftJoin('usersRooms', 'usersRooms.roomId', '=', 'rooms.id')
+        .where('hostId', userId)
+        .orWhere('userId', userId)
+        .distinct()
+        .count(),
+      connection('rooms')
+        .leftJoin('usersRooms', 'usersRooms.roomId', '=', 'rooms.id')
+        .limit(pageSize)
+        .offset((page - 1) * pageSize)
+        .where('hostId', userId)
+        .orWhere('userId', userId)
+        .distinct()
+        .select('*')
+    ]);
+  },
+
+  addUserToRoom(userId, roomId) {
+    return connection('usersRooms').insert({ userId, roomId });
+  },
+
+  removeUserFromRoom(userId, roomId) {
+    return connection('usersRooms')
+      .where('userId', userId)
+      .andWhere('roomId', roomId)
+      .delete();
   }
 };

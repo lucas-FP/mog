@@ -1,20 +1,15 @@
-const connection = require('../database/connection');
 const crypto = require('crypto');
+
+const RoomDAO = require('../dao/RoomDAO');
+const UserDAO = require('../dao/UserDAO');
 
 const KnexError = require('../utils/errors/KnexError');
 
 module.exports = {
   async index(req, res) {
     const { page = 1 } = req.query;
-
-    const countPromise = connection('rooms').count();
-    const roomsPromise = connection('rooms')
-      .where('isPublic', true)
-      .limit(5)
-      .offset((page - 1) * 5)
-      .select('*');
     try {
-      const [count, rooms] = await Promise.all([countPromise, roomsPromise]);
+      const [count, rooms] = await RoomDAO.publicPaginate(5, page);
       res.header('X-Total-Count', count[0]['count(*)']);
       return res.json(rooms);
     } catch (err) {
@@ -25,10 +20,7 @@ module.exports = {
   async find(req, res) {
     const { id } = req.params;
     try {
-      const room = await connection('rooms')
-        .where('id', id)
-        .select('*')
-        .first();
+      const room = await RoomDAO.find(id);
       if (!room) return res.status(404).json({ error: 'Room not found.' });
       return res.json(room);
     } catch (err) {
@@ -53,14 +45,11 @@ module.exports = {
     const id = crypto.randomBytes(4).toString('HEX');
 
     try {
-      const owner = await connection('users')
-        .where('id', hostId)
-        .select('*')
-        .first();
+      const owner = await UserDAO.find(id);
 
       if (!owner) return res.status(404).json({ error: 'Host user not found' });
 
-      await connection('rooms').insert({
+      await RoomDAO.create(
         id,
         hostId,
         maxPlayers,
@@ -71,7 +60,7 @@ module.exports = {
         turnTimeout,
         livesPerPlayer,
         incrementalTimeout
-      });
+      );
 
       return res.json({ id });
     } catch (err) {
@@ -84,10 +73,7 @@ module.exports = {
     const hostId = req.session.userId;
 
     try {
-      const found = await connection('rooms')
-        .where('id', id)
-        .select('*')
-        .first();
+      const found = await RoomDAO.find(id);
 
       if (!found) return res.status(404).json({ error: 'Room not found.' });
 
@@ -96,14 +82,7 @@ module.exports = {
           .status(403)
           .json({ error: 'Cannot delete a room you are not a host of.' });
 
-      await Promise.all([
-        connection('rooms')
-          .where('id', id)
-          .delete(),
-        connection('usersRooms')
-          .where('roomId', id)
-          .delete()
-      ]);
+      await RoomDAO.delete();
 
       return res.status(204).send();
     } catch (err) {
