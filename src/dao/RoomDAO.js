@@ -19,29 +19,12 @@ module.exports = {
       .first();
   },
 
-  create(
-    id,
-    hostId,
-    maxPlayers,
-    initialLives,
-    deckSize,
-    isPublic,
-    password,
-    turnTimeout,
-    livesPerPlayer,
-    incrementalTimeout
-  ) {
+  create(hostId, maxPlayers, isPublic, password) {
     return connection('rooms').insert({
-      id,
       hostId,
       maxPlayers,
-      initialLives,
-      deckSize,
       isPublic,
-      password,
-      turnTimeout,
-      livesPerPlayer,
-      incrementalTimeout
+      password
     });
   },
 

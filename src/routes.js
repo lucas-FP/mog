@@ -1,26 +1,27 @@
 const express = require('express');
 
 const UserController = require('./controllers/UserController');
-const UserRoomsController = require('./controllers/UserRoomsController');
 const RoomController = require('./controllers/RoomController');
 const SessionController = require('./controllers/SessionController');
 
+const userAuth = require('./middleware/user-auth');
+
 const routes = express.Router();
+
+routes.use('/user/:userId', userAuth);
 
 // Room
 routes.get('/room', RoomController.index);
-routes.get('/room/:id', RoomController.find);
+routes.get('/room/:roomId', RoomController.find);
 routes.post('/room', RoomController.create);
-routes.delete('/room/:id', RoomController.delete);
+routes.delete('/room/:roomId', RoomController.delete);
 
 //User
 routes.get('/user', UserController.index);
 routes.post('/user', UserController.create);
-
-//Profile
-routes.get('/user-rooms', UserRoomsController.index);
-routes.post('/user-rooms', UserRoomsController.create);
-routes.delete('/user-rooms', UserRoomsController.delete);
+routes.get('/user/:userId/rooms', UserController.paginateUserRooms);
+routes.post('/user/:userId/rooms', UserController.create);
+routes.delete('/user/:userId/rooms/:roomId', UserController.removeUserFromRoom);
 
 //Session
 routes.post('/login', SessionController.create);

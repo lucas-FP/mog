@@ -1,9 +1,7 @@
-const crypto = require('crypto');
-
 const RoomDAO = require('../dao/RoomDAO');
 const UserDAO = require('../dao/UserDAO');
 
-const KnexError = require('../utils/errors/KnexError');
+const Errors = require('../utils/errors');
 
 module.exports = {
   async index(req, res) {
@@ -13,7 +11,7 @@ module.exports = {
       res.header('X-Total-Count', count[0]['count(*)']);
       return res.json(rooms);
     } catch (err) {
-      return KnexError.create(res, err);
+      return Errors.knex(res, err);
     }
   },
 
@@ -24,47 +22,25 @@ module.exports = {
       if (!room) return res.status(404).json({ error: 'Room not found.' });
       return res.json(room);
     } catch (err) {
-      return KnexError.create(res, err);
+      return Errors.knex(res, err);
     }
   },
 
   async create(req, res) {
-    const {
-      maxPlayers,
-      initialLives,
-      deckSize,
-      isPublic,
-      password,
-      turnTimeout,
-      livesPerPlayer,
-      incrementalTimeout
-    } = req.body;
+    const { maxPlayers, isPublic, password } = req.body;
 
     const hostId = req.session.userId;
 
-    const id = crypto.randomBytes(4).toString('HEX');
-
     try {
-      const owner = await UserDAO.find(id);
+      const owner = await UserDAO.find(hostId);
 
       if (!owner) return res.status(404).json({ error: 'Host user not found' });
 
-      await RoomDAO.create(
-        id,
-        hostId,
-        maxPlayers,
-        initialLives,
-        deckSize,
-        isPublic,
-        password,
-        turnTimeout,
-        livesPerPlayer,
-        incrementalTimeout
-      );
+      await RoomDAO.create(hostId, maxPlayers, isPublic, password);
 
-      return res.json({ id });
+      return res.json({ hostId });
     } catch (err) {
-      return KnexError.create(res, err);
+      return Errors.knex(res, err);
     }
   },
 
@@ -86,7 +62,7 @@ module.exports = {
 
       return res.status(204).send();
     } catch (err) {
-      return KnexError.create(res, err);
+      return Errors.knex(res, err);
     }
   }
 };

@@ -1,6 +1,5 @@
-const crypto = require('crypto');
 const bcrypt = require('bcrypt');
-const KnexError = require('../utils/errors/KnexError');
+const Errors = require('../utils/errors');
 const UserDAO = require('../dao/UserDAO');
 const RoomDAO = require('../dao/RoomDAO');
 
@@ -10,23 +9,37 @@ module.exports = {
       const users = await UserDAO.index();
       return res.json(users);
     } catch (err) {
-      return KnexError.create(res, err);
+      return Errors.knex(res, err);
     }
   },
 
   async create(req, res) {
     const { nick, isGuest, userName, password } = req.body;
 
-    const id = crypto.randomBytes(4).toString('HEX');
+    if (!isGuest && !password)
+      return res.status(400).json({
+        error: 'Invalid password',
+        details: 'Received falsy password for non guest user'
+      });
+    if (!isGuest && !userName)
+      return res.status(400).json({
+        error: 'Invalid user name',
+        details: 'Received falsy user name for non guest user'
+      });
 
     bcrypt.hash(password, 10, async (err, hash) => {
-      if (!err) {
+      if (password == null || !err) {
         try {
-          await UserDAO.create(id, nick, isGuest, userName, hash);
-          req.session.userId = id;
-          return res.json({ id });
+          const ids = await UserDAO.create(
+            nick,
+            isGuest,
+            userName,
+            password == null ? null : hash
+          );
+          req.session.userId = ids[0];
+          return res.json(ids[0]);
         } catch (err) {
-          KnexError.create(res, err);
+          Errors.knex(res, err);
         }
       } else return res.status(500).json({ error: 'Encryption error' });
     });
@@ -34,20 +47,18 @@ module.exports = {
 
   async paginateUserRooms(req, res) {
     const { page = 1 } = req.query;
-
-    const userId = req.session.userId;
-
+    const { userId } = req.params;
     try {
       const [count, rooms] = await UserDAO.paginateUserRooms(userId, 5, page);
       res.header('X-Total-Count', count[0]['count(*)']);
       return res.json(rooms);
     } catch (err) {
-      return KnexError.create(res, err);
+      return Errors.knex(res, err);
     }
   },
 
   async addUserToRoom(req, res) {
-    const userId = req.session.userId;
+    const { userId } = req.params;
     const { roomId, password } = req.body;
 
     try {
@@ -61,13 +72,12 @@ module.exports = {
       await UserDAO.linkUserToRoom(userId, roomId);
       return res.json({ userId, roomId });
     } catch (err) {
-      return KnexError.create(res, err);
+      return Errors.knex(res, err);
     }
   },
 
   async removeUserFromRoom(req, res) {
-    const userId = req.session.userId;
-    const { roomId } = req.params;
+    const { userId, roomId } = req.params;
 
     try {
       const room = await RoomDAO.find(roomId);
@@ -82,7 +92,7 @@ module.exports = {
       await UserDAO.removeUserFromRoom(userId, roomId);
       return res.status(204).send();
     } catch (err) {
-      return KnexError.create(res, err);
+      return Errors.knex(res, err);
     }
   }
 };

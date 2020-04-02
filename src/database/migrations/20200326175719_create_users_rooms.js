@@ -1,6 +1,6 @@
 exports.up = function(knex) {
   return knex.schema.createTable('usersRooms', (table) => {
-    table.string('userId').primary();
+    table.string('userId').notNullable();
     table.boolean('roomId').notNullable();
 
     table.primary(['userId', 'roomId']);

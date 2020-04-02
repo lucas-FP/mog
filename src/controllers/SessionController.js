@@ -1,5 +1,5 @@
 const UserDAO = require('../dao/UserDAO');
-const KnexError = require('../utils/errors/KnexError');
+const Errors = require('../utils/errors');
 const bcrypt = require('bcrypt');
 
 module.exports = {
@@ -20,7 +20,7 @@ module.exports = {
         }
       });
     } catch (err) {
-      return KnexError.create(res, err);
+      return Errors.knex(res, err);
     }
   }
 };

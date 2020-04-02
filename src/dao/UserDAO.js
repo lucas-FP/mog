@@ -19,9 +19,8 @@ module.exports = {
       .first();
   },
 
-  create(id, nick, isGuest, userName, password) {
+  create(nick, isGuest, userName, password) {
     return connection('users').insert({
-      id,
       nick,
       isGuest,
       userName,
