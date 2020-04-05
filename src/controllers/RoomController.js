@@ -1,7 +1,7 @@
 const RoomDAO = require('../dao/RoomDAO');
 const UserDAO = require('../dao/UserDAO');
 
-const Errors = require('../utils/errors');
+const Errors = require('../utils/Errors');
 
 module.exports = {
   async index(req, res) {
@@ -36,9 +36,14 @@ module.exports = {
 
       if (!owner) return res.status(404).json({ error: 'Host user not found' });
 
-      await RoomDAO.create(hostId, maxPlayers, isPublic, password);
+      const [roomId] = await RoomDAO.create(
+        hostId,
+        maxPlayers,
+        isPublic,
+        password
+      );
 
-      return res.json({ hostId });
+      return res.json(roomId);
     } catch (err) {
       return Errors.knex(res, err);
     }
@@ -64,5 +69,5 @@ module.exports = {
     } catch (err) {
       return Errors.knex(res, err);
     }
-  }
+  },
 };

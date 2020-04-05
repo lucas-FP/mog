@@ -1,5 +1,5 @@
 const bcrypt = require('bcrypt');
-const Errors = require('../utils/errors');
+const Errors = require('../utils/Errors');
 const UserDAO = require('../dao/UserDAO');
 const RoomDAO = require('../dao/RoomDAO');
 
@@ -19,25 +19,25 @@ module.exports = {
     if (!isGuest && !password)
       return res.status(400).json({
         error: 'Invalid password',
-        details: 'Received falsy password for non guest user'
+        details: 'Received falsy password for non guest user',
       });
     if (!isGuest && !userName)
       return res.status(400).json({
         error: 'Invalid user name',
-        details: 'Received falsy user name for non guest user'
+        details: 'Received falsy user name for non guest user',
       });
 
     bcrypt.hash(password, 10, async (err, hash) => {
       if (password == null || !err) {
         try {
-          const ids = await UserDAO.create(
+          const [id] = await UserDAO.create(
             nick,
             isGuest,
             userName,
             password == null ? null : hash
           );
-          req.session.userId = ids[0];
-          return res.json(ids[0]);
+          req.session.userId = id;
+          return res.json(id);
         } catch (err) {
           Errors.knex(res, err);
         }
@@ -94,5 +94,5 @@ module.exports = {
     } catch (err) {
       return Errors.knex(res, err);
     }
-  }
+  },
 };

@@ -1,4 +1,4 @@
-const connection = require('../database/connection');
+const connection = require('../database/SqlConnection');
 
 module.exports = {
   paginatePublicRooms(pageSize, page) {
@@ -8,15 +8,12 @@ module.exports = {
         .where('isPublic', true)
         .limit(pageSize)
         .offset((page - 1) * pageSize)
-        .select('*')
+        .select('*'),
     ]);
   },
 
   find(id) {
-    return connection('rooms')
-      .where('id', id)
-      .select('*')
-      .first();
+    return connection('rooms').where('id', id).select('*').first();
   },
 
   create(hostId, maxPlayers, isPublic, password) {
@@ -24,18 +21,14 @@ module.exports = {
       hostId,
       maxPlayers,
       isPublic,
-      password
+      password,
     });
   },
 
   delete(id) {
     Promise.all([
-      connection('rooms')
-        .where('id', id)
-        .delete(),
-      connection('usersRooms')
-        .where('roomId', id)
-        .delete()
+      connection('rooms').where('id', id).delete(),
+      connection('usersRooms').where('roomId', id).delete(),
     ]);
-  }
+  },
 };

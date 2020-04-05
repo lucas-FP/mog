@@ -1,11 +1,9 @@
 const express = require('express');
 const routes = require('./routes');
-
-const redis = require('redis');
 const session = require('express-session');
+const redisClient = require('./database/RedisConnection').redisClient;
 
-let RedisStore = require('connect-redis')(session);
-let redisClient = redis.createClient();
+const RedisStore = require('connect-redis')(session);
 
 const sessTime = 5 * 60 * 1000;
 
@@ -20,7 +18,7 @@ app.use(
     resave: false,
     saveUninitialized: true,
     rolling: true,
-    cookie: { path: '/', httpOnly: true, secure: false, maxAge: sessTime }
+    cookie: { path: '/', httpOnly: true, secure: false, maxAge: sessTime },
   })
 );
 

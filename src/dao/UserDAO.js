@@ -1,4 +1,4 @@
-const connection = require('../database/connection');
+const connection = require('../database/SqlConnection');
 
 module.exports = {
   index() {
@@ -6,17 +6,11 @@ module.exports = {
   },
 
   find(id) {
-    return connection('users')
-      .where('id', id)
-      .select('*')
-      .first();
+    return connection('users').where('id', id).select('*').first();
   },
 
   findByName(userName) {
-    return connection('users')
-      .where('userName', userName)
-      .select('*')
-      .first();
+    return connection('users').where('userName', userName).select('*').first();
   },
 
   create(nick, isGuest, userName, password) {
@@ -24,7 +18,7 @@ module.exports = {
       nick,
       isGuest,
       userName,
-      password
+      password,
     });
   },
 
@@ -43,7 +37,7 @@ module.exports = {
         .where('hostId', userId)
         .orWhere('userId', userId)
         .distinct()
-        .select('*')
+        .select('*'),
     ]);
   },
 
@@ -56,5 +50,20 @@ module.exports = {
       .where('userId', userId)
       .andWhere('roomId', roomId)
       .delete();
-  }
+  },
+
+  findUserInRoom(userId, roomId) {
+    return Promise.all([
+      connection('usersRooms')
+        .where('userId', userId)
+        .andWhere('roomId', roomId)
+        .select('*')
+        .first(),
+      connection('rooms')
+        .where('hostId', userId)
+        .andWhere('id', roomId)
+        .select('*')
+        .first(),
+    ]);
+  },
 };

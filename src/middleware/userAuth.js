@@ -1,9 +1,8 @@
-const Errors = require('../utils/errors');
+const Errors = require('../utils/Errors');
 
 function userAuth(req, res, next) {
   const sessId = req.session.userId;
   const { userId } = req.params;
-  console.log(userId, sessId);
   if (sessId === parseInt(userId)) next();
   else return Errors.unauthorized(res);
 }
