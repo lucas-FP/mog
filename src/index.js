@@ -1,27 +1,22 @@
 const express = require('express');
 const routes = require('./routes');
-const session = require('express-session');
-const redisClient = require('./database/RedisConnection').redisClient;
+const app = require('express')();
+const cors = require('cors');
 
-const RedisStore = require('connect-redis')(session);
+const http = require('http').createServer(app);
+const io = require('socket.io')(http);
 
-const sessTime = 5 * 60 * 1000;
+const sessionMiddleware = require('./middleware/sessionMiddleware');
 
-const app = express();
+app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
 
 app.use(express.json());
 
-app.use(
-  session({
-    store: new RedisStore({ client: redisClient, ttl: sessTime }),
-    secret: '4e132f45b2b3d5df',
-    resave: false,
-    saveUninitialized: true,
-    rolling: true,
-    cookie: { path: '/', httpOnly: true, secure: false, maxAge: sessTime },
-  })
-);
+app.use(sessionMiddleware);
 
 app.use(routes);
 
-app.listen(3333);
+//Loads sockets
+require('./sockets')(io);
+
+http.listen(3333);

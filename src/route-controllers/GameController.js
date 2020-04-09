@@ -1,9 +1,8 @@
 const GameDAO = require('../dao/GameDAO');
-const CONNECT = require('../utils/GameEnum').CONNECT;
 
 module.exports = {
   async create(req, res) {
-    const { roomId } = req.params;
+    const { roomId, gameCode } = req.params;
     const hostId = req.session.userId;
     try {
       const opts = {
@@ -14,7 +13,7 @@ module.exports = {
         connectSize: 3,
         gravity: false,
       };
-      const gameId = await GameDAO.create(roomId, CONNECT, hostId, opts);
+      const gameId = await GameDAO.create(roomId, gameCode, hostId, opts);
       res.json(gameId);
     } catch (err) {
       res.status(500).json({ error: err });

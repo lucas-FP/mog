@@ -11,6 +11,8 @@ module.exports = {
         if (!err) {
           if (response) {
             req.session.userId = storedUser.id;
+            req.session.userName = storedUser.userName;
+            req.session.userNick = storedUser.nick;
             return res.status(204).send();
           } else {
             return res.status(400).json({ error: 'Wrong password' });

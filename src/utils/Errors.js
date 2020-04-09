@@ -15,4 +15,20 @@ module.exports = {
       .status(401)
       .json({ error: 'You must be logged to perform this action.' });
   },
+
+  socketAlreadyConnected: {
+    error: 'Already connected to room.',
+  },
+
+  socketUserNotLogged: {
+    error: 'User not logged.',
+  },
+
+  socketUserNotAllowed: {
+    error: 'User not allowed.',
+  },
+
+  socketUserNotConnected: {
+    error: 'User not connected to room.',
+  },
 };
