@@ -1,61 +1,63 @@
 const UserDAO = require('../dao/UserDAO');
 const RoomDAO = require('../dao/RoomDAO');
+const RoomConnectionDAO = require('../dao/RoomConnectionDAO');
 const Errors = require('../utils/Errors');
+const SocketHelpers = require('../utils/SocketHelpers');
 
 module.exports = {
   async enter(socket, { roomId }) {
-    const userData = {
-      id: socket.handshake.session.userId,
-      userName: socket.handshake.session.userName,
-      nick: socket.handshake.session.nick,
-    };
-    if (!userData.id)
-      return socket.emit('customError', Errors.socketUserNotLogged);
-    const userList = (await UserDAO.getConnctedUsers(roomId)).map((i) =>
-      Number(i)
-    );
-    if (userList.includes(userData.id))
-      return socket.emit('customError', Errors.socketAlreadyConnected);
+    const userData = SocketHelpers.getUserData(socket);
 
-    const user = await UserDAO.findUserInRoom(userData.id, roomId);
-    if (!user) return socket.emit('customError', Errors.socketAlreadyConnected);
+    //TODO break into smaller blocks
+    try {
+      //Check if user can really enterr the room
+      //Is logged?
+      if (!userData.id) return Errors.socketUserNotLogged(socket);
+      //Is not already in room?
+      const userList = (
+        await RoomConnectionDAO.getConnctedUsers(roomId)
+      ).map((i) => Number(i));
+      const roomData = await RoomDAO.find(roomId);
+      if (roomData.maxPlayers <= userList.length)
+        return Errors.socketRoomFull(socket);
+      if (userList.includes(userData.id))
+        return Errors.socketAlreadyConnected(socket);
+      //Is user allowed in room?
+      const [userCheck, hostCheck] = await UserDAO.findUserInRoom(
+        userData.id,
+        roomId
+      );
+      if (!userCheck && !hostCheck) return Errors.socketUserNotAllowed(socket);
 
-    socket.join(roomId);
-    await UserDAO.connectUserInRoom(userData.id, roomId);
-    socket.in(roomId).emit('entered', userData);
+      socket.join(roomId);
+      await RoomConnectionDAO.connectUserInRoom(userData.id, roomId);
+      const connectionData = await RoomConnectionDAO.getRoomData(roomId);
+      socket.in(roomId).emit('entered', userData);
+      socket.emit('roomData', { connectionData });
+    } catch (err) {
+      return Errors.socketError(socket, err);
+    }
   },
 
   async pushMessage(socket, { roomId, message }) {
-    const userData = {
-      id: socket.handshake.session.userId,
-      userName: socket.handshake.session.userName,
-      nick: socket.handshake.session.nick,
-    };
-    if (!userData.id)
-      return socket.emit('customError', Errors.socketUserNotLogged);
+    const userData = SocketHelpers.getUserData(socket);
+    if (!userData.id) return Errors.socketUserNotLogged(socket);
 
     //TODO find out if this check is needed
-    const userList = (await UserDAO.getConnctedUsers(roomId)).map((i) =>
-      Number(i)
-    );
+    const userList = (
+      await RoomConnectionDAO.getConnctedUsers(roomId)
+    ).map((i) => Number(i));
     if (!userList.includes(userData.id))
-      return socket.emit('customError', Errors.socketUserNotConnected);
+      return Errors.socketUserNotConnected(socket);
 
-    await RoomDAO.pushMessage(roomId, message);
-
+    await RoomConnectionDAO.pushMessage(roomId, message);
     socket.in(roomId).emit('messagePushed', message);
   },
 
-  leave(socket) {
-    const rooms = Object.keys(socket.rooms);
-    const userData = {
-      id: socket.handshake.session.userId,
-      userName: socket.handshake.session.userName,
-      nick: socket.handshake.session.nick,
-    };
-    console.log(userData);
-    console.log('leaving');
-    rooms.forEach((r) => socket.in(r).emit('left', userData));
-    socket.in('1').emit('left', userData);
+  async leave(socket, { roomId }) {
+    const userData = SocketHelpers.getUserData(socket);
+    await RoomConnectionDAO.disconnectUserFromRooom(userData.id, roomId);
+    socket.in(roomId).emit('left', userData);
+    socket.leave(roomId);
   },
 };

@@ -16,19 +16,35 @@ module.exports = {
       .json({ error: 'You must be logged to perform this action.' });
   },
 
-  socketAlreadyConnected: {
-    error: 'Already connected to room.',
+  socketAlreadyConnected(socket) {
+    return socket.emit('customError', { error: 'Already connected to room.' });
+  },
+  socketUserNotLogged(socket) {
+    return socket.emit('customError', { error: 'User not logged.' });
+  },
+  socketUserNotAllowed(socket) {
+    return socket.emit('customError', { error: 'User not allowed.' });
+  },
+  socketUserNotConnected(socket) {
+    return socket.emit('customError', {
+      error: 'User not connected to room.',
+    });
+  },
+  socketRoomFull(socket) {
+    return socket.emit('customError', {
+      error: 'Room full.',
+    });
+  },
+  socketGameAlreadyStarted(socket) {
+    return socket.emit('customError', {
+      error: 'Game has already started.',
+    });
   },
 
-  socketUserNotLogged: {
-    error: 'User not logged.',
-  },
-
-  socketUserNotAllowed: {
-    error: 'User not allowed.',
-  },
-
-  socketUserNotConnected: {
-    error: 'User not connected to room.',
+  socketError(socket, error) {
+    return socket.emit('customError', {
+      error: 'Errorin socket controller.',
+      details: error,
+    });
   },
 };

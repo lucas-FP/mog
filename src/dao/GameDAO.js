@@ -1,10 +1,21 @@
 const redis = require('../database/RedisConnection').asyncClient;
+const GameStates = require('../utils/GameConfigs/GameStatesEnum');
 
 module.exports = {
   create(roomId, gameCode, hostId, opts) {
     const insertKeys = Object.keys(opts);
     const optsArray = insertKeys.map((k) => [k, opts[k]]).flat();
-    const gameDataArray = ['host', hostId, 'gameCode', gameCode, ...optsArray];
+    const gameDataArray = [
+      'host',
+      hostId,
+      'gameCode',
+      gameCode,
+      'turnCounter',
+      0,
+      'gameState',
+      GameStates.NOT_STARTED,
+      ...optsArray,
+    ];
 
     //Getting room's game Id
     return redis
@@ -31,21 +42,34 @@ module.exports = {
   },
 
   enter(roomId, gameId, userId) {
-    return redis.rpush(`room:${roomId}:game:${gameId}:users`, userId);
+    return redis.rpush(`room:${roomId}:game:${gameId}:players`, userId);
+  },
+
+  leave(roomId, gameId, userId) {
+    const key = `room:${roomId}:game:${gameId}:players`;
+    return redis.lrem(key, 0, userId);
   },
 
   insert(roomId, gameId, data) {
     const insertKeys = Object.keys(data);
-    const dataArray = insertKeys.map((k) => [k, data[k]]).flat();
+    const dataArray = insertKeys
+      .filter((k) => data[k] !== null)
+      .map((k) => [k, data[k]])
+      .flat();
     return redis.hset(`room:${roomId}:game:${gameId}`, dataArray);
   },
 
   get(roomId, gameId, key) {
     const docKey = `room:${roomId}:game:${gameId}`;
-    if (key === 'players') return redis.lrange(`${docKey}:users`, 0, -1);
-    if (key === 'playersLen') return redis.llen(`${docKey}:users`);
+    if (key === 'players') return redis.lrange(`${docKey}:players`, 0, -1);
+    if (key === 'playersLen') return redis.llen(`${docKey}:players`);
     else if (key && key.length > 1) return redis.hget(docKey, key);
     else return redis.hmget(docKey, key);
+  },
+
+  incrTurn(roomId, gameId) {
+    const key = `room:${roomId}:game:${gameId}`;
+    return redis.hincrby(key, 'turnCounter', 1);
   },
 
   getAllData(roomId, gameId) {

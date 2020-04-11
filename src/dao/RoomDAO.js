@@ -1,5 +1,4 @@
 const connection = require('../database/SqlConnection');
-const redis = require('../database/RedisConnection').asyncClient;
 
 module.exports = {
   paginatePublicRooms(pageSize, page) {
@@ -31,10 +30,5 @@ module.exports = {
       connection('rooms').where('id', id).delete(),
       connection('usersRooms').where('roomId', id).delete(),
     ]);
-  },
-
-  pushMessage(id, message) {
-    const key = `room:${id}:chat`;
-    return redis.rpush(key, message);
   },
 };

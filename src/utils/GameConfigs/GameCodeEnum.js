@@ -1,3 +1,3 @@
 module.exports = {
-  CONNECT: 1,
+  CONNECT: 'connect',
 };

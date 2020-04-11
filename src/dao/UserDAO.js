@@ -1,5 +1,4 @@
 const connection = require('../database/SqlConnection');
-const redis = require('../database/RedisConnection').asyncClient;
 
 module.exports = {
   index() {
@@ -66,20 +65,5 @@ module.exports = {
         .select('*')
         .first(),
     ]);
-  },
-
-  getConnctedUsers(roomId) {
-    const key = `room:${roomId}:users`;
-    return redis.lrange(key, 0, -1);
-  },
-
-  connectUserInRoom(userId, roomId) {
-    const key = `room:${roomId}:users`;
-    return redis.rpush(key, userId);
-  },
-
-  disconnectUserFromRooom(userId, roomId) {
-    const key = `room:${roomId}:users`;
-    return redis.lrem(key, 0, userId);
   },
 };

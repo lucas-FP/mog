@@ -1,4 +1,5 @@
 const GameDAO = require('../dao/GameDAO');
+const GameHelper = require('../utils/GameConfigs/GameHelpers');
 
 module.exports = {
   async create(req, res) {
@@ -12,28 +13,10 @@ module.exports = {
         minPlayers: 2,
         connectSize: 3,
         gravity: false,
+        grid: GameHelper.createGameGrid(3, 3),
       };
       const gameId = await GameDAO.create(roomId, gameCode, hostId, opts);
       res.json(gameId);
-    } catch (err) {
-      res.status(500).json({ error: err });
-    }
-  },
-
-  async enter(req, res) {
-    const { roomId, gameId } = req.params;
-    const userId = req.session.userId;
-
-    const maxPlayers = GameDAO.get(roomId, gameId, 'maxPlayers');
-    const actualPlayers = GameDAO.get(roomId, gameId, 'playersLen');
-
-    if (actualPlayers >= maxPlayers)
-      return res.status(400).json({ error: 'Game is already full' });
-
-    try {
-      await GameDAO.enter(roomId, gameId, userId);
-      const gameData = await GameDAO.getAllData(roomId, gameId);
-      return res.json(gameData);
     } catch (err) {
       res.status(500).json({ error: err });
     }
