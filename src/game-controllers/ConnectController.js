@@ -39,42 +39,44 @@ const applyGravity = (x, y, grid) => {
   return newY;
 };
 
-module.exports = async function processAction(
-  roomId,
-  gameId,
-  action,
-  stateEmitter,
-  eventEmitter
-) {
-  const turnCounter = await GameDAO.get(roomId, gameId, 'turnCounter');
-  const players = await GameDAO.get(roomId, gameId, 'players');
-  const isPlayerTurn =
-    GameHelpers.getTurnPlayer(players, turnCounter) === action.playerId;
+module.exports = {
+  async processAction(roomId, gameId, action, stateEmitter, eventEmitter) {
+    const turnCounter = await GameDAO.get(roomId, gameId, 'turnCounter');
+    const players = await GameDAO.get(roomId, gameId, 'players');
+    const isPlayerTurn =
+      GameHelpers.getTurnPlayer(players, turnCounter) === action.playerId;
 
-  if (!isPlayerTurn) eventEmitter(action);
-  else {
-    const gameData = await GameDAO.getAllData(roomId, gameId);
-    const grid = GameHelpers.parseGameGrid(gameData.grid);
-    //TODO returnproper errors
-    if (grid[action.y][action.x] !== '') return;
-    if (gameData.gameState !== GameStates.ONGOING) return;
-    if (gameData.gravity) action.y = applyGravity(action.x, action.y, grid);
-    const victory = checkVictory(
-      action.x,
-      action.y,
-      action.playerId,
-      gameData.grid
-    );
+    if (!isPlayerTurn) eventEmitter(action);
+    else {
+      const gameData = await GameDAO.getAllData(roomId, gameId);
+      const grid = GameHelpers.parseGameGrid(gameData.grid);
+      //TODO returnproper errors
+      if (grid[action.y][action.x] !== '') return;
+      if (gameData.gameState !== GameStates.ONGOING) return;
+      if (gameData.gravity) action.y = applyGravity(action.x, action.y, grid);
+      const victory = checkVictory(
+        action.x,
+        action.y,
+        action.playerId,
+        gameData.grid
+      );
 
-    await Promise.all([
-      GameDAO.insert(roomId, gameId, {
-        gameState: victory ? GameStates.FINISHED : GameStates.ONGOING,
-        gameWinner: victory ? action.playerId : null,
-        grid: GameHelpers.stringifyGameGrid(grid),
-      }),
-      GameDAO.incrTurn(roomId, gameId),
-    ]);
+      await Promise.all([
+        GameDAO.insert(roomId, gameId, {
+          gameState: victory ? GameStates.FINISHED : GameStates.ONGOING,
+          gameWinner: victory ? action.playerId : null,
+          grid: GameHelpers.stringifyGameGrid(grid),
+        }),
+        GameDAO.incrTurn(roomId, gameId),
+      ]);
 
-    stateEmitter(await GameDAO.getAllData(roomId, gameId));
-  }
+      stateEmitter(await GameDAO.getAllData(roomId, gameId));
+    }
+  },
+
+  initializeData(gameConfig) {
+    const { xSize, ySize } = gameConfig;
+    const grid = GameHelpers.createGameGrid(xSize, ySize);
+    return { grid, ...gameConfig };
+  },
 };

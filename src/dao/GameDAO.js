@@ -1,10 +1,16 @@
 const redis = require('../database/RedisConnection').asyncClient;
 const GameStates = require('../utils/GameConfigs/GameStatesEnum');
+const { initializeData } = require('../game-controllers/ConnectController');
+const { parseUserData, stringifyUserData } = require('../utils/SocketHelpers');
 
+const gameExpiration = 28800000;
+
+//TODO set other resources expiration time
 module.exports = {
-  create(roomId, gameCode, hostId, opts) {
-    const insertKeys = Object.keys(opts);
-    const optsArray = insertKeys.map((k) => [k, opts[k]]).flat();
+  create(roomId, gameCode, hostId, data) {
+    const initializedData = initializeData(data);
+    const insertKeys = Object.keys(initializedData);
+    const optsArray = insertKeys.map((k) => [k, initializedData[k]]).flat();
     const gameDataArray = [
       'host',
       hostId,
@@ -32,8 +38,14 @@ module.exports = {
       })
       .then((gameId) => {
         const gamePromise = redis
-          .hset(`room:${roomId}:game:${gameId}`, gameDataArray)
-          .then(() => redis.expire(`room:${roomId}:game:${gameId}`, 28800000));
+          .hset(`room:${roomId}:game:${gameId}`, [
+            'id',
+            gameId,
+            ...gameDataArray,
+          ])
+          .then(() =>
+            redis.expire(`room:${roomId}:game:${gameId}`, gameExpiration)
+          );
         const incrPromise = redis.hincrby(`room:${roomId}`, 'gameCount', 1);
         return Promise.all([gamePromise, incrPromise]).then(() =>
           Promise.resolve(Number(gameId))
@@ -41,8 +53,9 @@ module.exports = {
       });
   },
 
-  enter(roomId, gameId, userId) {
-    return redis.rpush(`room:${roomId}:game:${gameId}:players`, userId);
+  enter(roomId, gameId, userData) {
+    const key = `room:${roomId}:game:${gameId}:players`;
+    return redis.rpush(key, stringifyUserData(userData));
   },
 
   leave(roomId, gameId, userId) {
@@ -61,7 +74,12 @@ module.exports = {
 
   get(roomId, gameId, key) {
     const docKey = `room:${roomId}:game:${gameId}`;
-    if (key === 'players') return redis.lrange(`${docKey}:players`, 0, -1);
+    if (key === 'players')
+      return redis
+        .lrange(`${docKey}:players`, 0, -1)
+        .then((players) =>
+          Promise.resolve(players.map((p) => parseUserData(p)))
+        );
     if (key === 'playersLen') return redis.llen(`${docKey}:players`);
     else if (key && key.length > 1) return redis.hget(docKey, key);
     else return redis.hmget(docKey, key);

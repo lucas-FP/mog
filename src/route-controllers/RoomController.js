@@ -7,7 +7,7 @@ module.exports = {
   async index(req, res) {
     const { page = 1 } = req.query;
     try {
-      const [count, rooms] = await RoomDAO.publicPaginate(5, page);
+      const [count, rooms] = await RoomDAO.paginatePublicRooms(5, page);
       res.header('X-Total-Count', count[0]['count(*)']);
       return res.json(rooms);
     } catch (err) {
@@ -27,7 +27,7 @@ module.exports = {
   },
 
   async create(req, res) {
-    const { maxPlayers, isPublic, password } = req.body;
+    const { name, maxPlayers, isPublic, password } = req.body;
 
     const hostId = req.session.userId;
 
@@ -38,6 +38,7 @@ module.exports = {
 
       const [roomId] = await RoomDAO.create(
         hostId,
+        name,
         maxPlayers,
         isPublic,
         password

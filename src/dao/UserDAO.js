@@ -28,16 +28,14 @@ module.exports = {
         .leftJoin('usersRooms', 'usersRooms.roomId', '=', 'rooms.id')
         .where('hostId', userId)
         .orWhere('userId', userId)
-        .distinct()
-        .count(),
+        .countDistinct('rooms.id'),
       connection('rooms')
         .leftJoin('usersRooms', 'usersRooms.roomId', '=', 'rooms.id')
         .limit(pageSize)
         .offset((page - 1) * pageSize)
         .where('hostId', userId)
         .orWhere('userId', userId)
-        .distinct()
-        .select('*'),
+        .distinct('rooms.id', 'rooms.name'),
     ]);
   },
 

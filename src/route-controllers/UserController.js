@@ -47,7 +47,7 @@ module.exports = {
 
   async paginateUserRooms(req, res) {
     const { page = 1 } = req.query;
-    const { userId } = req.params;
+    const userId = req.session.userId;
     try {
       const [count, rooms] = await UserDAO.paginateUserRooms(userId, 5, page);
       res.header('X-Total-Count', count[0]['count(*)']);
@@ -58,7 +58,7 @@ module.exports = {
   },
 
   async addUserToRoom(req, res) {
-    const { userId } = req.params;
+    const userId = req.params;
     const { roomId, password } = req.body;
 
     try {
@@ -69,7 +69,27 @@ module.exports = {
 
       if (!room) return res.status(404).json({ error: 'Room not found' });
 
-      await UserDAO.linkUserToRoom(userId, roomId);
+      await UserDAO.addUserToRoom(userId, roomId);
+      return res.json({ userId, roomId });
+    } catch (err) {
+      return Errors.knex(res, err);
+    }
+  },
+
+  async enterRoom(req, res) {
+    const userId = req.session.userId;
+    const { roomId } = req.params;
+    const password = req.body;
+
+    try {
+      const room = await RoomDAO.find(roomId);
+
+      if (room.password && password !== room.password)
+        return res.status(401).json({ error: 'Incorrect password' });
+
+      if (!room) return res.status(404).json({ error: 'Room not found' });
+
+      await UserDAO.addUserToRoom(userId, roomId);
       return res.json({ userId, roomId });
     } catch (err) {
       return Errors.knex(res, err);
@@ -77,7 +97,8 @@ module.exports = {
   },
 
   async removeUserFromRoom(req, res) {
-    const { userId, roomId } = req.params;
+    const { roomId } = req.params;
+    const userId = req.session.userId;
 
     try {
       const room = await RoomDAO.find(roomId);

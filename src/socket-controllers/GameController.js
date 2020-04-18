@@ -19,27 +19,31 @@ module.exports = {
   async enter(socket, { roomId, gameId }) {
     const userData = SocketHelpers.getUserData(socket);
 
-    if (!userData) return Errors.socketUserNotLogged(socket);
     try {
+      if (!userData) return Errors.socketUserNotLogged(socket);
+
       const maxPlayers = await GameDAO.get(roomId, gameId, 'maxPlayers');
-      const actualPlayers = await GameDAO.get(roomId, gameId, 'players');
+      const actualPlayers = await GameDAO.get(
+        roomId,
+        gameId,
+        'players'
+      ).map((u) => Number(u.id));
 
       if (actualPlayers.length >= maxPlayers)
         return Errors.socketRoomFull(socket);
 
-      if (actualPlayers.includes(userData.id))
-        return Errors.socketAlreadyConnected(socket);
+      if (actualPlayers.includes(userData.id)) return;
 
       const gameState = await GameDAO.get(roomId, gameId, 'gameState');
       if (gameState !== GameStates.NOT_STARTED)
         return Errors.socketGameAlreadyStarted(socket);
 
-      await GameDAO.enter(roomId, gameId, userData.id);
+      await GameDAO.enter(roomId, gameId, userData);
       const roomKey = `${roomId}:${gameId}`;
       socket.join(roomKey);
       socket.in(roomKey).emit('entered', userData);
       const gameData = await GameDAO.getAllData(roomId, gameId);
-      socket.emit(gameData);
+      socket.emit('gameData', gameData);
     } catch (err) {
       return Errors.socketError(socket, err);
     }

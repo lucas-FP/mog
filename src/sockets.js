@@ -1,6 +1,5 @@
 const RoomController = require('./socket-controllers/RoomController');
 const GameController = require('./socket-controllers/GameController');
-const BaseController = require('./socket-controllers/BaseController');
 const sessionMiddleware = require('./middleware/sessionMiddleware');
 const sharedsession = require('express-socket.io-session');
 const connectController = require('./game-controllers/ConnectController');
@@ -21,17 +20,13 @@ module.exports = function sockets(io) {
       RoomController.pushMessage(socket, data)
     );
 
-    socket.on('leave', (data) => GameController.leave(socket, data));
-
-    socket.on('disconnecting', () =>
-      BaseController.handleDisconnection(socket)
-    );
+    socket.on('leave', (data) => RoomController.leave(socket, data));
 
     socket.on('error', (err) => console.log(err));
   });
 
   //Game Socket
-  const connectSocket = io.of('/connect-game');
+  const connectSocket = io.of('/game');
   connectSocket.use(
     sharedsession(sessionMiddleware, {
       autoSave: true,
@@ -45,10 +40,6 @@ module.exports = function sockets(io) {
 
     socket.on('playerAction', (data) =>
       GameController.control(socket, data, connectController)
-    );
-
-    socket.on('disconnecting', () =>
-      BaseController.handleDisconnection(socket)
     );
 
     socket.on('error', (err) => console.log(err));

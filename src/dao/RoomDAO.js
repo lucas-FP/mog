@@ -16,9 +16,10 @@ module.exports = {
     return connection('rooms').where('id', id).select('*').first();
   },
 
-  create(hostId, maxPlayers, isPublic, password) {
+  create(hostId, name, maxPlayers, isPublic, password) {
     return connection('rooms').insert({
       hostId,
+      name,
       maxPlayers,
       isPublic,
       password,
