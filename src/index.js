@@ -10,7 +10,6 @@ let port = process.env.PORT;
 if (port == null || port == '') {
   port = 3333;
 }
-app.listen(port);
 
 const sessionMiddleware = require('./middleware/sessionMiddleware');
 
@@ -27,4 +26,4 @@ app.use(routes);
 //Loads sockets
 require('./sockets')(io);
 
-http.listen(3333);
+http.listen(port);
