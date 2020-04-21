@@ -3,7 +3,7 @@ exports.up = function (knex) {
     table.increments('id');
     table.string('name').notNullable();
     table.string('hostId').notNullable();
-    table.int('maxPlayers').notNullable();
+    table.integer('maxPlayers').notNullable();
     table.boolean('isPublic').notNullable();
     table.string('password');
     table.foreign('hostId').references('id').inTable('users');
