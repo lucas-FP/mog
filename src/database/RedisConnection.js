@@ -1,5 +1,5 @@
 const redis = require('redis');
-const redisClient = redis.createClient();
+const redisClient = redis.createClient(process.env.REDIS_URL);
 const { promisify } = require('util');
 
 redisClient.on('error', function (error) {

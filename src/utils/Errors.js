@@ -50,6 +50,13 @@ module.exports = {
     });
   },
 
+  socketGameNoMinimumPlayers(socket) {
+    return socket.emit('customError', {
+      error: 'Game does not have minimum number of players connected.',
+      status: 400,
+    });
+  },
+
   socketError(socket, error) {
     return socket.emit('customError', {
       error: 'Error in socket controller.',

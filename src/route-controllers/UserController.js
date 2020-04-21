@@ -58,8 +58,9 @@ module.exports = {
   },
 
   async addUserToRoom(req, res) {
-    const userId = req.params;
-    const { roomId, password } = req.body;
+    const { userId } = req.session;
+    const { roomId } = req.params;
+    const { password } = req.body;
 
     try {
       const room = await RoomDAO.find(roomId);
@@ -79,11 +80,10 @@ module.exports = {
   async enterRoom(req, res) {
     const userId = req.session.userId;
     const { roomId } = req.params;
-    const password = req.body;
+    const { password } = req.body;
 
     try {
       const room = await RoomDAO.find(roomId);
-
       if (room.password && password !== room.password)
         return res.status(401).json({ error: 'Incorrect password' });
 

@@ -14,6 +14,5 @@ module.exports = session({
     httpOnly: true,
     secure: false,
     maxAge: sessTime,
-    // sameSite: 'none',
   },
 });

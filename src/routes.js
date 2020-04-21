@@ -6,7 +6,6 @@ const SessionController = require('./route-controllers/SessionController');
 const GameController = require('./route-controllers/GameController');
 
 const isLogged = require('./middleware/isLogged');
-const isInRoom = require('./middleware/isInRoom');
 
 const routes = express.Router();
 
@@ -31,8 +30,9 @@ routes.post('/user/rooms/:roomId', UserController.enterRoom);
 routes.delete('/user/rooms/:roomId', UserController.removeUserFromRoom);
 
 //Games
-routes.use('/room/:roomId/game', isLogged, isInRoom);
+// routes.use('/room/:roomId/game', isLogged, isInRoom);
+// routes.post('/room/:roomId/game', GameController.create);
 
-routes.post('/room/:roomId/game', GameController.create);
+routes.get('/games-defaults/:gameCode', GameController.getDefault);
 
 module.exports = routes;

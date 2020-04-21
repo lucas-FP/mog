@@ -1,82 +1,119 @@
-const GameDAO = require('../dao/GameDAO');
 const GameHelpers = require('../utils/GameConfigs/GameHelpers');
-const GameStates = require('../utils/GameConfigs/GameStatesEnum');
+const GameStatus = require('../utils/GameConfigs/GameStatusEnum');
+const GameDAO = require('../dao/GameDAO');
 
-const checkVictory = (x, y, playerId, grid, connectSize) => {
+//TODO make better turn management
+const checkVictory = (x, y, turnNumber, grid, connectSize) => {
   const directions = GameHelpers.GRID_DIRECTIONS;
+  const axisCount = [0, 0, 0, 0];
   for (let d in directions) {
-    let chain = 1;
-    let unbroken = true;
-    while (unbroken) {
-      const checkGrid = GameHelpers.gridMoveGet(
-        grid,
-        x,
-        y,
-        GameHelpers.GRID_DIRECTIONS[d],
-        chain
-      );
-      if (checkGrid === playerId) chain++;
-      else unbroken = false;
-      if (chain === connectSize) return true;
+    const direction = GameHelpers.GRID_DIRECTIONS[d];
+    for (let i = 1; i < connectSize; i++) {
+      const el = GameHelpers.gridMoveGet(grid, x, y, direction, i);
+      if (el === turnNumber.toString()) {
+        axisCount[GameHelpers.GRID_AXIS[d]]++;
+      } else break;
     }
   }
-  return false;
+  if (axisCount.find((ax) => ax >= connectSize - 1)) return turnNumber;
+  if (grid.flat().filter((v) => v === '').length === 0) return -1;
+  else return null;
 };
 
 const applyGravity = (x, y, grid) => {
-  let element;
+  let element = grid[y][x];
   let newY = y;
-  while (element !== '') {
-    newY--;
+  while (element === '' && newY < grid.length) {
     element = GameHelpers.gridMoveGet(
       grid,
       x,
       newY,
       GameHelpers.GRID_DIRECTIONS.DOWN
     );
+    newY++;
   }
-  newY++;
-  return newY;
+  return newY - 1;
+};
+
+//Todo think of better way to inject this function on DAO
+const readData = (allData) => {
+  const { gameData } = allData;
+
+  //Parses grid
+  gameData.grid = GameHelpers.parseGameGrid(gameData.grid);
+
+  //Inserts player turn into data
+  gameData.turnPlayer = GameHelpers.getTurnPlayer(
+    allData.playerSlots,
+    allData.gameData.turnCounter
+  );
+
+  //Forces victory player cleaning
+  gameData.victoryPlayer = null;
+  return allData;
 };
 
 module.exports = {
+  initializeData(gameConfig) {
+    const { xSize, ySize } = gameConfig;
+    gameConfig.turnPlayer = null;
+    gameConfig.gameWinner = null;
+    const grid = GameHelpers.createGameGrid(xSize, ySize);
+    return { ...gameConfig, grid };
+  },
+
+  readData,
+
   async processAction(roomId, gameId, action, stateEmitter, eventEmitter) {
-    const turnCounter = await GameDAO.get(roomId, gameId, 'turnCounter');
-    const players = await GameDAO.get(roomId, gameId, 'players');
+    const turnCounter = await GameDAO().get(roomId, gameId, 'turnCounter');
+    const players = await GameDAO().get(roomId, gameId, 'player-slots');
     const isPlayerTurn =
-      GameHelpers.getTurnPlayer(players, turnCounter) === action.playerId;
+      GameHelpers.getTurnPlayer(players, turnCounter).id === action.playerId;
+    const turnIndex = GameHelpers.getTurnIndex(players, turnCounter);
 
     if (!isPlayerTurn) eventEmitter(action);
     else {
-      const gameData = await GameDAO.getAllData(roomId, gameId);
-      const grid = GameHelpers.parseGameGrid(gameData.grid);
+      const { gameData } = await GameDAO({ readData }).getAllData(
+        roomId,
+        gameId
+      );
+      const grid = gameData.grid;
       //TODO returnproper errors
       if (grid[action.y][action.x] !== '') return;
-      if (gameData.gameState !== GameStates.ONGOING) return;
-      if (gameData.gravity) action.y = applyGravity(action.x, action.y, grid);
+      if (gameData.gameStatus !== GameStatus.ONGOING) return;
+      //TODO change to unset, not string
+      if (gameData.gravity !== 'false')
+        action.y = applyGravity(action.x, action.y, grid);
+      grid[action.y][action.x] = turnIndex;
       const victory = checkVictory(
         action.x,
         action.y,
-        action.playerId,
-        gameData.grid
+        turnIndex,
+        gameData.grid,
+        gameData.connectSize
       );
 
+      const victoryPlayer =
+        victory === null
+          ? null
+          : victory === -1
+          ? { id: null, msg: 'Tie' }
+          : players[victory];
+
       await Promise.all([
-        GameDAO.insert(roomId, gameId, {
-          gameState: victory ? GameStates.FINISHED : GameStates.ONGOING,
-          gameWinner: victory ? action.playerId : null,
+        GameDAO().insert(roomId, gameId, {
+          gameStatus:
+            victory != null ? GameStatus.FINISHED : GameStatus.ONGOING,
+          gameWinner: victory,
+          //TODO stringify method should also be injected
           grid: GameHelpers.stringifyGameGrid(grid),
         }),
-        GameDAO.incrTurn(roomId, gameId),
+        GameDAO().incrTurn(roomId, gameId),
       ]);
 
-      stateEmitter(await GameDAO.getAllData(roomId, gameId));
+      const gameState = await GameDAO({ readData }).getAllData(roomId, gameId);
+      gameState.gameData.victoryPlayer = victoryPlayer;
+      stateEmitter(gameState);
     }
-  },
-
-  initializeData(gameConfig) {
-    const { xSize, ySize } = gameConfig;
-    const grid = GameHelpers.createGameGrid(xSize, ySize);
-    return { grid, ...gameConfig };
   },
 };

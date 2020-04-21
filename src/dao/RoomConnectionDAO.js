@@ -1,6 +1,7 @@
 const redis = require('../database/RedisConnection').asyncClient;
 const { stringifyUserData, parseUserData } = require('../utils/SocketHelpers');
 const GameDAO = require('../dao/GameDAO');
+const ConnectController = require('../game-controllers/ConnectController');
 
 //TODO set expiration dates to all data
 module.exports = {
@@ -18,7 +19,6 @@ module.exports = {
 
   disconnectUserFromRooom(userData, roomId) {
     const key = `room:${roomId}:users`;
-    console.log(stringifyUserData(userData));
     return redis.lrem(key, 0, stringifyUserData(userData));
   },
 
@@ -38,7 +38,8 @@ module.exports = {
   pushGame(roomId, hostId, { gameCode, gameConfig }) {
     const key = `room:${roomId}:games`;
     let newId;
-    return GameDAO.create(roomId, gameCode, hostId, gameConfig)
+    return GameDAO(ConnectController)
+      .create(roomId, gameCode, hostId, gameConfig)
       .then((gameId) => {
         newId = gameId;
         return redis.rpush(key, gameId);
@@ -54,13 +55,13 @@ module.exports = {
       .lrange(key, 0, -1)
       .then((gameIds) => {
         allIds = gameIds;
-        return Promise.all(gameIds.map((g) => GameDAO.getAllData(roomId, g)));
+        return Promise.all(
+          gameIds.map((g) => GameDAO(ConnectController).getAllData(roomId, g))
+        );
       })
       .then((allData) => {
-        const validGames = allData.filter((d) => Object.keys(d).length !== 0);
-        const invalidIds = allIds.filter(
-          (_id, i) => Object.keys(allData[i]).length === 0
-        );
+        const validGames = allData.filter((d) => d);
+        const invalidIds = allIds.filter((_id, i) => !allData[i]);
         invalidIds.forEach((id) => redis.lrem(key, 0, id));
         return Promise.resolve(validGames);
       });

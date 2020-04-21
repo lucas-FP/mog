@@ -1,17 +1,18 @@
 const SocketHelpers = require('../utils/SocketHelpers');
 const Errors = require('../utils/Errors');
 const GameDAO = require('../dao/GameDAO');
-const GameStates = require('../utils/GameConfigs/GameStatesEnum');
+const GameStatus = require('../utils/GameConfigs/GameStatusEnum');
+const ConnectController = require('../game-controllers/ConnectController');
 
 const createStateEmittter = (socket, roomKey) => {
   return (state) => {
-    socket.in(roomKey).emit('state', state);
+    socket.in(roomKey).emit('gameState', state);
   };
 };
 
 const createEventEmittter = (socket, roomKey) => {
   return (event) => {
-    socket.in(roomKey).emit('event', event);
+    socket.in(roomKey).emit('gameEvent', event);
   };
 };
 
@@ -20,31 +21,47 @@ module.exports = {
     const userData = SocketHelpers.getUserData(socket);
 
     try {
-      if (!userData) return Errors.socketUserNotLogged(socket);
+      if (!userData.id) return Errors.socketUserNotLogged(socket);
 
-      const maxPlayers = await GameDAO.get(roomId, gameId, 'maxPlayers');
-      const actualPlayers = await GameDAO.get(
+      //TODO change all hardcoded game controllers
+      const maxPlayers = await GameDAO(ConnectController).get(
         roomId,
         gameId,
-        'players'
-      ).map((u) => Number(u.id));
-
-      if (actualPlayers.length >= maxPlayers)
+        'maxPlayers'
+      );
+      const actualPlayers = await GameDAO(ConnectController).get(
+        roomId,
+        gameId,
+        'player-slots'
+      );
+      if (
+        actualPlayers.length >= maxPlayers &&
+        !actualPlayers.map((u) => u.id).includes(userData.id)
+      )
         return Errors.socketRoomFull(socket);
 
-      if (actualPlayers.includes(userData.id)) return;
-
-      const gameState = await GameDAO.get(roomId, gameId, 'gameState');
-      if (gameState !== GameStates.NOT_STARTED)
+      const gameStatus = await GameDAO(ConnectController).get(
+        roomId,
+        gameId,
+        'gameStatus'
+      );
+      if (
+        gameStatus !== GameStatus.NOT_STARTED &&
+        !actualPlayers.map((u) => u.id).includes(userData.id)
+      )
         return Errors.socketGameAlreadyStarted(socket);
 
-      await GameDAO.enter(roomId, gameId, userData);
+      await GameDAO(ConnectController).enter(roomId, gameId, userData);
       const roomKey = `${roomId}:${gameId}`;
       socket.join(roomKey);
       socket.in(roomKey).emit('entered', userData);
-      const gameData = await GameDAO.getAllData(roomId, gameId);
-      socket.emit('gameData', gameData);
+      const roomData = await GameDAO(ConnectController).getAllData(
+        roomId,
+        gameId
+      );
+      socket.emit('roomData', roomData);
     } catch (err) {
+      console.log(err);
       return Errors.socketError(socket, err);
     }
   },
@@ -64,10 +81,37 @@ module.exports = {
 
   async start(socket, { roomId, gameId }) {
     try {
-      await GameDAO.insert(roomId, gameId, { gameState: GameStates.ONGOING });
+      const minPlayers = await GameDAO(ConnectController).get(
+        roomId,
+        gameId,
+        'maxPlayers'
+      );
+      const actualPlayers = await GameDAO(ConnectController).get(
+        roomId,
+        gameId,
+        'playersLen'
+      );
+      if (actualPlayers < minPlayers)
+        return Errors.socketGameNoMinimumPlayers(socket);
+
+      await GameDAO(ConnectController).insert(roomId, gameId, {
+        gameStatus: GameStatus.ONGOING,
+      });
       const roomKey = `${roomId}:${gameId}`;
-      socket.in(roomKey).emit('started');
+      socket.in(roomKey).emit('gameStarted');
     } catch (err) {
+      console.log(err);
+      return Errors.socketError(socket, err);
+    }
+  },
+
+  async restart(socket, { roomId, gameId }) {
+    try {
+      const roomData = await GameDAO(ConnectController).restart(roomId, gameId);
+      const roomKey = `${roomId}:${gameId}`;
+      socket.in(roomKey).emit('roomData', roomData);
+    } catch (err) {
+      console.log(err);
       return Errors.socketError(socket, err);
     }
   },
@@ -75,11 +119,12 @@ module.exports = {
   async leave(socket, { roomId, gameId }) {
     const userData = SocketHelpers.getUserData(socket);
     try {
-      await GameDAO.leave(roomId, gameId, userData.id);
+      await GameDAO(ConnectController).leave(roomId, gameId, userData);
       const roomKey = `${roomId}:${gameId}`;
       socket.to(roomKey).emit('left', userData);
       socket.leave(roomKey);
     } catch (err) {
+      console.log(err);
       return Errors.socketError(socket, err);
     }
   },

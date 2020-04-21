@@ -1,5 +1,7 @@
 const GameDAO = require('../dao/GameDAO');
 const GameHelper = require('../utils/GameConfigs/GameHelpers');
+const GameDefaults = require('../utils/GameConfigs/GameDefaults');
+const ConnectController = require('../game-controllers/ConnectController');
 
 module.exports = {
   async create(req, res) {
@@ -15,10 +17,21 @@ module.exports = {
         gravity: false,
         grid: GameHelper.createGameGrid(3, 3),
       };
-      const gameId = await GameDAO.create(roomId, gameCode, hostId, opts);
+      const gameId = await GameDAO(ConnectController).create(
+        roomId,
+        gameCode,
+        hostId,
+        opts
+      );
       res.json(gameId);
     } catch (err) {
       res.status(500).json({ error: err });
     }
+  },
+
+  getDefault(req, res) {
+    const { gameCode } = req.params;
+    let defaultData = GameDefaults[gameCode];
+    return res.json(defaultData);
   },
 };

@@ -33,6 +33,17 @@ module.exports = {
     UP_LEFT: [-1, -1],
   },
 
+  GRID_AXIS: {
+    UP: 0,
+    UP_RIGHT: 1,
+    RIGHT: 2,
+    DOWN_RIGHT: 3,
+    DOWN: 0,
+    DOWN_LEFT: 1,
+    LEFT: 2,
+    UP_LEFT: 3,
+  },
+
   gridMoveGet(grid, initX, initY, direction, offset = 1) {
     const maxY = grid.length - 1;
     const maxX = grid[0].length - 1;
@@ -48,5 +59,10 @@ module.exports = {
     const nPlayers = players.length;
     const turnIndex = turn % nPlayers;
     return players[turnIndex];
+  },
+
+  getTurnIndex(players, turn) {
+    const nPlayers = players.length;
+    return turn % nPlayers;
   },
 };
