@@ -6,7 +6,7 @@ exports.up = function (knex) {
     table.primary(['userId', 'roomId']);
 
     table.foreign('userId').references('id').inTable('users');
-    table.foreign('roomId').references('id').inTable('room');
+    table.foreign('roomId').references('id').inTable('rooms');
   });
 };
 
