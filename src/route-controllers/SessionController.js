@@ -33,7 +33,7 @@ module.exports = {
     const { nick } = req.body;
     try {
       const [{ id }] = await UserDAO.create(nick, true, null, null);
-      req.session.userId = { id };
+      req.session.userId = id;
       req.session.userName = null;
       req.session.userNick = nick;
       return res.status(204).send();

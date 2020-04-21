@@ -2,9 +2,12 @@
 
 module.exports = {
   development: {
-    client: 'sqlite3',
+    client: 'postgresql',
     connection: {
-      filename: './src/database/dev.sqlite3',
+      host: '127.0.0.1',
+      user: 'gmroomuser',
+      password: 'gmpass',
+      database: 'gmroomdb',
     },
     migrations: {
       directory: './src/database/migrations',
@@ -18,6 +21,7 @@ module.exports = {
     migrations: {
       directory: './src/database/migrations',
     },
+    useNullAsDefault: true,
   },
 
   production: {
@@ -26,5 +30,6 @@ module.exports = {
     migrations: {
       directory: './src/database/migrations',
     },
+    useNullAsDefault: true,
   },
 };
