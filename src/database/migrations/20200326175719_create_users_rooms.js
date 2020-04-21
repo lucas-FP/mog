@@ -1,21 +1,15 @@
-exports.up = function(knex) {
+exports.up = function (knex) {
   return knex.schema.createTable('usersRooms', (table) => {
-    table.string('userId').notNullable();
-    table.boolean('roomId').notNullable();
+    table.integer('userId').notNullable();
+    table.integer('roomId').notNullable();
 
     table.primary(['userId', 'roomId']);
 
-    table
-      .foreign('userId')
-      .references('id')
-      .inTable('users');
-    table
-      .foreign('roomId')
-      .references('id')
-      .inTable('room');
+    table.foreign('userId').references('id').inTable('users');
+    table.foreign('roomId').references('id').inTable('room');
   });
 };
 
-exports.down = function(knex) {
+exports.down = function (knex) {
   return knex.schema.dropTable('usersRooms');
 };
