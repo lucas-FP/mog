@@ -44,13 +44,9 @@ module.exports = function sockets(io) {
       GameController.control(socket, data, processAction)
     );
 
-    socket.on('startGame', (data) =>
-      GameController.start(socket, data, processAction)
-    );
+    socket.on('startGame', (data) => GameController.start(socket, data));
 
-    socket.on('restartGame', (data) =>
-      GameController.restart(socket, data, processAction)
-    );
+    socket.on('restartGame', (data) => GameController.restart(socket, data));
 
     socket.on('error', (err) => console.log(err));
   });

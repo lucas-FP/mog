@@ -1,6 +1,7 @@
 const SocketHelpers = require('../utils/SocketHelpers');
 const Errors = require('../utils/Errors');
 const GameDAO = require('../dao/GameDAO');
+const UserDAO = require('../dao/UserDAO');
 const GameStatus = require('../utils/GameConfigs/GameStatusEnum');
 const ConnectController = require('../game-controllers/ConnectController');
 
@@ -22,6 +23,13 @@ module.exports = {
 
     try {
       if (!userData.id) return Errors.socketUserNotLogged(socket);
+
+      //Is user allowed in room?
+      const [userCheck, hostCheck] = await UserDAO.findUserInRoom(
+        userData.id,
+        roomId
+      );
+      if (!userCheck && !hostCheck) return Errors.socketUserNotAllowed(socket);
 
       //TODO change all hardcoded game controllers
       const maxPlayers = await GameDAO(ConnectController).get(
@@ -81,10 +89,8 @@ module.exports = {
 
   async start(socket, { roomId, gameId }) {
     try {
-      const minPlayers = await GameDAO(ConnectController).get(
-        roomId,
-        gameId,
-        'maxPlayers'
+      const minPlayers = Number(
+        await GameDAO(ConnectController).get(roomId, gameId, 'minPlayers')
       );
       const actualPlayers = await GameDAO(ConnectController).get(
         roomId,

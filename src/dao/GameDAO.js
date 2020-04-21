@@ -14,7 +14,10 @@ module.exports = function GameDAO(injectedGame) {
     create(roomId, gameCode, hostId, data) {
       const initializedData = injectedGame.initializeData(data);
       const insertKeys = Object.keys(initializedData);
-      const optsArray = insertKeys.map((k) => [k, initializedData[k]]).flat();
+      const optsArray = insertKeys
+        .filter((k) => initializedData[k])
+        .map((k) => [k, initializedData[k]])
+        .flat();
       const gameDataArray = [
         'host',
         hostId,

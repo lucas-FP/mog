@@ -82,7 +82,7 @@ module.exports = {
       if (grid[action.y][action.x] !== '') return;
       if (gameData.gameStatus !== GameStatus.ONGOING) return;
       //TODO change to unset, not string
-      if (gameData.gravity !== 'false')
+      if (gameData.gravity && gameData.gravity !== 'false')
         action.y = applyGravity(action.x, action.y, grid);
       grid[action.y][action.x] = turnIndex;
       const victory = checkVictory(
