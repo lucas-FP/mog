@@ -29,10 +29,6 @@ routes.get('/user/rooms', UserController.paginateUserRooms);
 routes.post('/user/rooms/:roomId', UserController.enterRoom);
 routes.delete('/user/rooms/:roomId', UserController.removeUserFromRoom);
 
-//Games
-// routes.use('/room/:roomId/game', isLogged, isInRoom);
-// routes.post('/room/:roomId/game', GameController.create);
-
 routes.get('/games-defaults/:gameCode', GameController.getDefault);
 
 module.exports = routes;

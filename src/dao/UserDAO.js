@@ -26,6 +26,7 @@ module.exports = {
   },
 
   paginateUserRooms(userId, pageSize, page) {
+    console.log(userId, pageSize, page);
     return Promise.all([
       connection('rooms')
         .leftJoin('usersRooms', 'usersRooms.roomId', '=', 'rooms.id')

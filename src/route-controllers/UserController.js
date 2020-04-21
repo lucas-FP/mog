@@ -30,7 +30,7 @@ module.exports = {
     bcrypt.hash(password, 10, async (err, hash) => {
       if (password == null || !err) {
         try {
-          const [id] = await UserDAO.create(
+          const [{ id }] = await UserDAO.create(
             nick,
             isGuest,
             userName,

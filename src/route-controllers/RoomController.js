@@ -36,7 +36,7 @@ module.exports = {
 
       if (!owner) return res.status(404).json({ error: 'Host user not found' });
 
-      const [roomId] = await RoomDAO.create(
+      const [{ roomId }] = await RoomDAO.create(
         hostId,
         name,
         maxPlayers,
