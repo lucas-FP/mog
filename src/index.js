@@ -17,7 +17,10 @@ const sessionMiddleware = require('./middleware/sessionMiddleware');
 
 app.use(
   cors({
-    origin: '*',
+    origin:
+      process.env.NODE_ENV === 'production'
+        ? 'https://serene-brushlands-73681.herokuapp.com'
+        : 'http://localhost:3000',
     credentials: true,
   })
 );
