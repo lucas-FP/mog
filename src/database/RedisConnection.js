@@ -19,6 +19,7 @@ const llen = promisify(redisClient.llen).bind(redisClient);
 const hgetall = promisify(redisClient.hgetall).bind(redisClient);
 const lrem = promisify(redisClient.lrem).bind(redisClient);
 const exists = promisify(redisClient.exists).bind(redisClient);
+const del = promisify(redisClient.del).bind(redisClient);
 
 module.exports = {
   redisClient,
@@ -36,5 +37,6 @@ module.exports = {
     hgetall,
     lrem,
     exists,
+    del,
   },
 };

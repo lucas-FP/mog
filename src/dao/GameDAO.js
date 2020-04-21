@@ -1,6 +1,7 @@
 const redis = require('../database/RedisConnection').asyncClient;
 const GameStatus = require('../utils/GameConfigs/GameStatusEnum');
 const { parseUserData, stringifyUserData } = require('../utils/SocketHelpers');
+const { arrayShuffle } = require('../utils/Generic');
 
 const gameExpiration = 8 * 60 * 60;
 
@@ -62,11 +63,19 @@ module.exports = function GameDAO(injectedGame) {
 
     restart(roomId, gameId) {
       return this.getAllData(roomId, gameId).then((data) => {
+        const playerSlotKeys = `room:${roomId}:game:${gameId}:player-slots`;
         const initializedData = injectedGame.initializeData(data.gameData);
         initializedData.turnCounter = 0;
         initializedData.gameStatus = GameStatus.NOT_STARTED;
         initializedData.gameWinner = null;
-        return this.insert(roomId, gameId, initializedData).then(() =>
+        arrayShuffle(data.playerSlots);
+        const dataPromise = this.insert(roomId, gameId, initializedData);
+        const deletePromise = redis.del(playerSlotKeys);
+        const insertPromises = data.playerSlots.map((s) =>
+          redis.lpush(playerSlotKeys, stringifyUserData(s))
+        );
+        const slotPromise = deletePromise.then(() => insertPromises);
+        return Promise.all([dataPromise, slotPromise]).then(() =>
           Promise.resolve(
             injectedGame.readData({
               ...data,
