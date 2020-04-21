@@ -17,13 +17,16 @@ module.exports = {
   },
 
   create(hostId, name, maxPlayers, isPublic, password) {
-    return connection('rooms').insert({
-      hostId,
-      name,
-      maxPlayers,
-      isPublic,
-      password,
-    });
+    return connection('rooms').insert(
+      {
+        hostId,
+        name,
+        maxPlayers,
+        isPublic,
+        password,
+      },
+      ['id']
+    );
   },
 
   delete(id) {

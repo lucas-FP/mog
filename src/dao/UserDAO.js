@@ -14,12 +14,15 @@ module.exports = {
   },
 
   create(nick, isGuest, userName, password) {
-    return connection('users').insert({
-      nick,
-      isGuest,
-      userName,
-      password,
-    });
+    return connection('users').insert(
+      {
+        nick,
+        isGuest,
+        userName,
+        password,
+      },
+      ['id']
+    );
   },
 
   paginateUserRooms(userId, pageSize, page) {
