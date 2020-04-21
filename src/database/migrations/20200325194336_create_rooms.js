@@ -2,7 +2,7 @@ exports.up = function (knex) {
   return knex.schema.createTable('rooms', (table) => {
     table.increments('id');
     table.string('name').notNullable();
-    table.string('hostId').notNullable();
+    table.integer('hostId').notNullable();
     table.integer('maxPlayers').notNullable();
     table.boolean('isPublic').notNullable();
     table.string('password');
