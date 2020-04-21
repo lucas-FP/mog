@@ -2,3 +2,4 @@ yarn.lock
 .eslintrc.json
 node_modules
 .vscode
+package-lock.json
