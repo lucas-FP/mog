@@ -63,6 +63,11 @@ module.exports = {
       const roomKey = `${roomId}:${gameId}`;
       socket.join(roomKey);
       socket.in(roomKey).emit('entered', userData);
+      if (!actualPlayers.map((u) => u.id).includes(userData.id))
+        socket
+          .in(roomKey)
+          .emit('gameSlotUpdated', [...actualPlayers, userData]);
+
       const roomData = await GameDAO(ConnectController).getAllData(
         roomId,
         gameId

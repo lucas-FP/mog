@@ -75,14 +75,20 @@ module.exports = function GameDAO(injectedGame) {
           redis.lpush(playerSlotKeys, stringifyUserData(s))
         );
         const slotPromise = deletePromise.then(() => insertPromises);
-        return Promise.all([dataPromise, slotPromise]).then(() =>
-          Promise.resolve(
-            injectedGame.readData({
-              ...data,
-              gameData: initializedData,
-            })
+        return Promise.all([dataPromise, slotPromise])
+          .then(() =>
+            //TODO check if order checks needed
+            this.get(roomId, gameId, 'player-slots')
           )
-        );
+          .then((playerSlots) =>
+            Promise.resolve(
+              injectedGame.readData({
+                ...data,
+                gameData: initializedData,
+                playerSlots: playerSlots,
+              })
+            )
+          );
       });
     },
 
