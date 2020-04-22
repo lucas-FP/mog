@@ -19,7 +19,7 @@ app.use(
   cors({
     origin:
       process.env.NODE_ENV === 'production'
-        ? 'https://serene-brushlands-73681.herokuapp.com'
+        ? 'https://mog-ui.herokuapp.com/'
         : 'http://localhost:3000',
     credentials: true,
   })
