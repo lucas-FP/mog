@@ -20,7 +20,6 @@ routes.post('/room', RoomController.create);
 routes.delete('/room/:roomId', RoomController.delete);
 
 //User
-//TODO check routes
 routes.post('/user', UserController.create);
 
 routes.use('/user', isLogged);

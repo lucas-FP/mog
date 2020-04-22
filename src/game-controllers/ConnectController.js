@@ -78,7 +78,7 @@ module.exports = {
         gameId
       );
       const grid = gameData.grid;
-      //TODO returnproper errors
+      //TODO return proper errors
       if (grid[action.y][action.x] !== '') return;
       if (gameData.gameStatus !== GameStatus.ONGOING) return;
       //TODO change to unset, not string

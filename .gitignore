@@ -1,6 +1,4 @@
-yarn.lock
 .eslintrc.json
 node_modules
 .vscode
-package-lock.json
 src/database/dev.sqlite3
