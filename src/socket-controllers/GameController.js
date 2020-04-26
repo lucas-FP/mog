@@ -64,9 +64,7 @@ module.exports = {
       socket.join(roomKey);
       socket.in(roomKey).emit('entered', userData);
       if (!actualPlayers.map((u) => u.id).includes(userData.id))
-        socket
-          .in(roomKey)
-          .emit('gameSlotUpdated', [...actualPlayers, userData]);
+        socket.in(roomKey).emit('enterSlot', userData);
 
       const roomData = await GameDAO(ConnectController).getAllData(
         roomId,
@@ -138,5 +136,38 @@ module.exports = {
       console.log(err);
       return Errors.socketError(socket, err);
     }
+  },
+
+  async quit(socket, { roomId, gameId }) {
+    const userData = SocketHelpers.getUserData(socket);
+    try {
+      await GameDAO(ConnectController).quit(roomId, gameId, userData);
+      const roomKey = `${roomId}:${gameId}`;
+      socket.to(roomKey).emit('quitted', userData);
+      socket.leave(roomKey);
+    } catch (err) {
+      console.log(err);
+      return Errors.socketError(socket, err);
+    }
+  },
+
+  async kick(socket, { roomId, gameId, kickedUserData }) {
+    //Only host can kick
+    const kickerUserData = SocketHelpers.getUserData(socket);
+    try {
+      const host = await GameDAO.get('host');
+      if (host !== kickerUserData.id)
+        return Errors.socketUserNotAllowed(socket);
+      await GameDAO(ConnectController).quit(roomId, gameId, kickedUserData);
+      const roomKey = `${roomId}:${gameId}`;
+      socket.in(roomKey).emit('quitted', kickedUserData);
+    } catch (err) {
+      console.log(err);
+      return Errors.socketError(socket, err);
+    }
+  },
+
+  ping(socket) {
+    socket.emit('pong');
   },
 };

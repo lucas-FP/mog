@@ -28,7 +28,7 @@ module.exports = function sockets(io) {
   });
 
   //Game Socket
-  const connectSocket = io.of('/games');
+  const connectSocket = io.of('/connect');
   connectSocket.use(
     sharedsession(sessionMiddleware, {
       autoSave: true,
@@ -39,6 +39,12 @@ module.exports = function sockets(io) {
     socket.on('enter', (data) => GameController.enter(socket, data));
 
     socket.on('leave', (data) => GameController.leave(socket, data));
+
+    socket.on('quit', (data) => GameController.quit(socket, data));
+
+    socket.on('kick', (data) => GameController.kick(socket, data));
+
+    socket.on('ping', (data) => GameController.ping(socket, data));
 
     socket.on('pushAction', (data) =>
       GameController.control(socket, data, processAction)

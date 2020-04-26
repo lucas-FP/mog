@@ -3,7 +3,7 @@ const GameStatus = require('../utils/GameConfigs/GameStatusEnum');
 const { parseUserData, stringifyUserData } = require('../utils/SocketHelpers');
 const { arrayShuffle } = require('../utils/Generic');
 
-const gameExpiration = 8 * 60 * 60;
+const gameExpiration = 1 * 60 * 60;
 
 //TODO set other resources expiration time
 //TODO separate game data and config data
@@ -61,6 +61,17 @@ module.exports = function GameDAO(injectedGame) {
         });
     },
 
+    setExpirations(roomId, gameId) {
+      const gameDataKey = `room:${roomId}:game:${gameId}`;
+      const playersKey = `room:${roomId}:game:${gameId}:players`;
+      const playerSlotsKey = `room:${roomId}:game:${gameId}:player-slots`;
+      return Promise.all([
+        redis.expire(gameDataKey, gameExpiration),
+        redis.expire(playersKey, gameExpiration),
+        redis.expire(playerSlotsKey, gameExpiration),
+      ]);
+    },
+
     restart(roomId, gameId) {
       return this.getAllData(roomId, gameId).then((data) => {
         const playerSlotKeys = `room:${roomId}:game:${gameId}:player-slots`;
@@ -71,11 +82,12 @@ module.exports = function GameDAO(injectedGame) {
         arrayShuffle(data.playerSlots);
         const dataPromise = this.insert(roomId, gameId, initializedData);
         const deletePromise = redis.del(playerSlotKeys);
+        const expirePromise = this.setExpirations(roomId, gameId);
         const insertPromises = data.playerSlots.map((s) =>
           redis.lpush(playerSlotKeys, stringifyUserData(s))
         );
         const slotPromise = deletePromise.then(() => insertPromises);
-        return Promise.all([dataPromise, slotPromise])
+        return Promise.all([dataPromise, slotPromise, expirePromise])
           .then(() =>
             //TODO check if order checks needed
             this.get(roomId, gameId, 'player-slots')
@@ -103,7 +115,7 @@ module.exports = function GameDAO(injectedGame) {
           return redis
             .rpush(keyPersistent, stringifyUserData(userData))
             .then((len) => {
-              redis.expire(keyPersistent, gameExpiration);
+              this.setExpirations(roomId, gameId);
               return Promise.resolve(len);
             });
         if (!persistUsers.map((u) => parseUserData(u).id).includes(userData.id))
@@ -115,6 +127,15 @@ module.exports = function GameDAO(injectedGame) {
     leave(roomId, gameId, userData) {
       const key = `room:${roomId}:game:${gameId}:players`;
       return redis.lrem(key, 0, stringifyUserData(userData));
+    },
+
+    quit(roomId, gameId, userData) {
+      const keyPlayers = `room:${roomId}:game:${gameId}:players`;
+      const keyPlayerSlots = `room:${roomId}:game:${gameId}:player-slots`;
+      return Promise.all([
+        redis.lrem(keyPlayers, 0, stringifyUserData(userData)),
+        redis.lrem(keyPlayerSlots, 0, stringifyUserData(userData)),
+      ]);
     },
 
     insert(roomId, gameId, data) {
