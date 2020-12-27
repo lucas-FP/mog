@@ -7,7 +7,7 @@ const cors = require('cors');
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 
-let port = process.env.NODE_PORT;
+let port = process.env.PORT || process.env.NODE_PORT;
 if (port == null || port == '') {
   port = 3333;
 }
