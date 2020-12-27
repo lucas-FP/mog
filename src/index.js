@@ -14,7 +14,7 @@ if (port == null || port == '') {
 
 const sessionMiddleware = require('./middleware/sessionMiddleware');
 
-//TODO setup environment variables
+app.set('trust proxy', 1);
 
 app.use(
   cors({
