@@ -1,11 +1,18 @@
 const redis = require('redis');
-const redisClient = redis.createClient({
-  host: process.env.REDIS_HOST,
-  port: process.env.REDIS_PORT,
-  password: process.env.REDIS_PASSWORD,
-  no_ready_check: true,
-});
-redisClient.auth(process.env.REDIS_PASSWORD);
+
+var redisClient;
+
+if (process.env.REDIS_URL) {
+  redisClient = redis.createClient({ url: process.env.REDIS_URL });
+} else {
+  redisClient = redis.createClient({
+    host: process.env.REDIS_HOST,
+    port: process.env.REDIS_PORT,
+    password: process.env.REDIS_PASSWORD,
+    no_ready_check: true,
+  });
+  redisClient.auth(process.env.REDIS_PASSWORD);
+}
 
 const { promisify } = require('util');
 

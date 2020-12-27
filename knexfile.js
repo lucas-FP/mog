@@ -17,7 +17,7 @@ module.exports = {
   },
   production: {
     client: 'postgresql',
-    connection: process.env.DATABASE_URL,
+    connection: process.env.POSTGRES_URL,
     migrations: {
       directory: './src/database/migrations',
     },
