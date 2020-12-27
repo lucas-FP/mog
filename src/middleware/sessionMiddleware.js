@@ -5,7 +5,7 @@ const sessTime = 8 * 60 * 60 * 1000;
 
 module.exports = session({
   store: new RedisStore({ client: redisClient, ttl: sessTime }),
-  secret: '4e132f45b2b3d5df',
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: true,
   // rolling: true,
@@ -14,5 +14,6 @@ module.exports = session({
     httpOnly: true,
     secure: false,
     maxAge: sessTime,
+    sameSite: 'none',
   },
 });

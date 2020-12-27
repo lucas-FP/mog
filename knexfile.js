@@ -1,29 +1,20 @@
 // Update with your config settings.
+require('dotenv').config();
 
 module.exports = {
   development: {
     client: 'postgresql',
     connection: {
-      host: '127.0.0.1',
-      user: 'gmroomuser',
-      password: 'gmpass',
-      database: 'gmroomdb',
+      host: process.env.POSTGRES_HOST,
+      user: process.env.POSTGRES_USER,
+      password: process.env.POSTGRES_PASSWORD,
+      database: process.env.POSTGRES_DB,
     },
     migrations: {
       directory: './src/database/migrations',
     },
     useNullAsDefault: true,
   },
-
-  staging: {
-    client: 'postgresql',
-    connection: process.env.DATABASE_URL,
-    migrations: {
-      directory: './src/database/migrations',
-    },
-    useNullAsDefault: true,
-  },
-
   production: {
     client: 'postgresql',
     connection: process.env.DATABASE_URL,

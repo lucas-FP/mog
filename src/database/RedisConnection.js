@@ -1,5 +1,12 @@
 const redis = require('redis');
-const redisClient = redis.createClient(process.env.REDIS_URL);
+const redisClient = redis.createClient({
+  host: process.env.REDIS_HOST,
+  port: process.env.REDIS_PORT,
+  password: process.env.REDIS_PASSWORD,
+  no_ready_check: true,
+});
+redisClient.auth(process.env.REDIS_PASSWORD);
+
 const { promisify } = require('util');
 
 redisClient.on('error', function (error) {

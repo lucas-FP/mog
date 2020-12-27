@@ -5,14 +5,14 @@ const UserDAO = require('../dao/UserDAO');
 const GameStatus = require('../utils/GameConfigs/GameStatusEnum');
 const ConnectController = require('../game-controllers/ConnectController');
 
-const createStateEmittter = (socket, roomKey) => {
-  return (state) => {
+const createStateEmitter = (socket, roomKey) => {
+  return state => {
     socket.in(roomKey).emit('gameState', state);
   };
 };
 
-const createEventEmittter = (socket, roomKey) => {
-  return (event) => {
+const createEventEmitter = (socket, roomKey) => {
+  return event => {
     socket.in(roomKey).emit('gameEvent', event);
   };
 };
@@ -44,7 +44,7 @@ module.exports = {
       );
       if (
         actualPlayers.length >= maxPlayers &&
-        !actualPlayers.map((u) => u.id).includes(userData.id)
+        !actualPlayers.map(u => u.id).includes(userData.id)
       )
         return Errors.socketRoomFull(socket);
 
@@ -55,7 +55,7 @@ module.exports = {
       );
       if (
         gameStatus !== GameStatus.NOT_STARTED &&
-        !actualPlayers.map((u) => u.id).includes(userData.id)
+        !actualPlayers.map(u => u.id).includes(userData.id)
       )
         return Errors.socketGameAlreadyStarted(socket);
 
@@ -63,7 +63,7 @@ module.exports = {
       const roomKey = `${roomId}:${gameId}`;
       socket.join(roomKey);
       socket.in(roomKey).emit('entered', userData);
-      if (!actualPlayers.map((u) => u.id).includes(userData.id))
+      if (!actualPlayers.map(u => u.id).includes(userData.id))
         socket.in(roomKey).emit('enterSlot', userData);
 
       const roomData = await GameDAO(ConnectController).getAllData(
@@ -85,8 +85,8 @@ module.exports = {
       roomId,
       gameId,
       action,
-      createStateEmittter(socket, roomKey),
-      createEventEmittter(socket, roomKey)
+      createStateEmitter(socket, roomKey),
+      createEventEmitter(socket, roomKey)
     );
   },
 
