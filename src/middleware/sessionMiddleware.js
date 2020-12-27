@@ -12,7 +12,7 @@ module.exports = session({
   cookie: {
     path: '/',
     httpOnly: true,
-    secure: false,
+    secure: process.env.NODE_ENV == 'production' ? true : false,
     maxAge: sessTime,
     sameSite: 'none',
   },
